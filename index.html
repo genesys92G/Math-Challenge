@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Summit Challenge | Reto en la Cima Matemática</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#ef4444',
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b',
+                        darkBorder: '#334155'
+                    },
+                    animation: {
+                        'score-pop': 'scorePop 0.5s ease-out forwards',
+                        'float-slow': 'float 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        scorePop: {
+                            '0%': { transform: 'scale(1)', color: 'inherit' },
+                            '50%': { transform: 'scale(1.5)', color: '#10b981' },
+                            '100%': { transform: 'scale(1)', color: 'inherit' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        #start-screen.hidden-start {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Pyramid Styles */
+        .pyramid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            margin: 1rem 0;
+            width: 100%;
+        }
+
+        .pyramid-row {
+            display: flex;
+            justify-content: center;
+            gap: 0.25rem;
+            width: 100%;
+        }
+
+        .math-box {
+            background-color: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem; /* Reducido para ahorrar espacio */
+            font-size: 0.85rem;      /* Reducido para ahorrar espacio */
+            font-weight: bold;
+            color: #1e293b;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 60px;         /* Reducido de 80px a 60px */
+            text-align: center;
+            flex-shrink: 1;
+        }
+
+        @media (min-width: 768px) {
+            .math-box {
+                padding: 0.5rem 0.75rem; /* Ajuste responsivo menor al original */
+                font-size: 1.15rem;      /* Ajuste responsivo menor al original */
+                min-width: 90px;         /* Ajuste responsivo menor al original */
+            }
+            .pyramid-row {
+                gap: 0.5rem;
+            }
+        }
+
+        .math-box.invisible-box {
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: none;
+            border: none;
+        }
+
+        .dark .math-box:not(.invisible-box) {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #f8fafc;
+        }
+
+        .math-box:not(.invisible-box):hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .big-button {
+            transition: all 0.1s active;
+        }
+        
+        .big-button:active {
+            transform: translateY(4px);
+            box-shadow: none !important;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-200 min-h-screen flex flex-col overflow-x-hidden">
+
+    <div id="start-screen">
+        <div class="text-center">
+            <i class="fas fa-mountain text-8xl text-primary mb-6 animate-float-slow drop-shadow-2xl"></i>
+            <h1 id="start-title" class="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight drop-shadow-lg">
+                Math Summit Challenge
+            </h1>
+            <p class="text-slate-300 text-xl md:text-2xl mb-12">Reach the peak of knowledge!</p>
+            
+            <button id="btn-init-app" class="bg-gradient-to-r from-primary to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white font-bold py-4 px-12 rounded-full shadow-[0_8px_0_rgb(29,78,216)] active:shadow-[0_0px_0_rgb(29,78,216)] active:translate-y-2 transition-all text-2xl uppercase tracking-wider">
+                <i class="fas fa-play mr-3"></i> Start
+            </button>
+        </div>
+    </div>
+
+    <div id="main-app" class="flex-grow flex flex-col hidden">
+        <nav class="w-full bg-white dark:bg-darkCard shadow-md p-4 flex justify-between items-center z-10 border-b border-slate-200 dark:border-darkBorder">
+            <h1 id="app-title" class="text-xl md:text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white">
+                <i class="fas fa-mountain text-primary mr-2"></i>Math Summit Challenge
+            </h1>
+            
+            <div class="flex items-center space-x-4">
+                <div id="stopwatch" class="text-2xl md:text-3xl font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg shadow-inner border border-slate-200 dark:border-slate-700">
+                    01:00
+                </div>
+                
+                <div class="flex space-x-2">
+                    <button id="btn-lang" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Language">
+                        <span class="font-bold text-sm md:text-lg">ES</span>
+                    </button>
+                    <button id="btn-theme" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                        <i class="fas fa-moon text-xl"></i>
+                    </button>
+                    <button id="btn-settings" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Settings">
+                        <i class="fas fa-cog text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-grow flex flex-col xl:flex-row w-full p-4 relative gap-6">
+            
+            <!-- Group 1 (Red) - Paneles más pequeños (w-1/5, max-w-xs) -->
+            <div class="w-full xl:w-1/5 flex flex-col items-center justify-start space-y-4 z-10 order-2 xl:order-1">
+                <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-xl text-center w-full max-w-xs border-t-8 border-secondary border border-slate-200 dark:border-darkBorder relative overflow-hidden">
+                    <div class="absolute -right-6 -top-6 opacity-10"><i class="fas fa-users text-7xl"></i></div>
+                    <h2 id="p1-title" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-2 relative z-10">Group 1</h2>
+                    <div class="text-5xl font-black text-secondary relative z-10" id="score-p1">0</div>
+                    <p id="p1-points-label" class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold relative z-10">Points</p>
+                </div>
+                
+                <img src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix&backgroundColor=ffdfbf" alt="Group 1" class="w-24 h-24 rounded-full shadow-lg border-4 border-secondary bg-white">
+                
+                <button id="btn-p1-win" class="big-button w-full max-w-xs bg-secondary hover:bg-red-600 text-white font-bold py-4 px-4 rounded-2xl text-xl shadow-[0_8px_0_rgb(185,28,28)] active:shadow-[0_0px_0_rgb(185,28,28)] border border-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-check-circle mr-2"></i><span id="p1-btn-text">DONE!</span>
+                </button>
+            </div>
+
+            <!-- Pyramid Center - Espacio central ampliado (w-3/5) -->
+            <div class="w-full xl:w-3/5 flex flex-col items-center justify-start py-4 order-1 xl:order-2">
+                <div class="mb-4 text-center">
+                    <h3 id="round-display" class="text-2xl font-bold text-slate-600 dark:text-slate-300 mb-4 bg-slate-200 dark:bg-slate-800 px-6 py-2 rounded-full shadow-sm inline-block">
+                        Round 1 of 5
+                    </h3>
+                    <div class="flex space-x-4 justify-center">
+                        <button id="btn-start" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-md text-xl transition transform hover:scale-105">
+                            <i class="fas fa-play mr-2"></i><span id="start-btn-text">Start Timer</span>
+                        </button>
+                        <button id="btn-next" class="hidden bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-lg shadow-md text-xl transition transform hover:scale-105">
+                            <i class="fas fa-forward mr-2"></i><span id="next-btn-text">Next Round</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="w-full overflow-x-auto pb-4 flex justify-center">
+                    <div id="pyramid-container" class="pyramid-container min-w-min">
+                        <!-- Pyramid rows generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group 2 (Blue) - Paneles más pequeños (w-1/5, max-w-xs) -->
+            <div class="w-full xl:w-1/5 flex flex-col items-center justify-start space-y-4 z-10 order-3 xl:order-3">
+                <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-xl text-center w-full max-w-xs border-t-8 border-primary border border-slate-200 dark:border-darkBorder relative overflow-hidden">
+                    <div class="absolute -left-6 -top-6 opacity-10"><i class="fas fa-users text-7xl"></i></div>
+                    <h2 id="p2-title" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-2 relative z-10">Group 2</h2>
+                    <div class="text-5xl font-black text-primary relative z-10" id="score-p2">0</div>
+                    <p id="p2-points-label" class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold relative z-10">Points</p>
+                </div>
+                
+                <img src="https://api.dicebear.com/7.x/fun-emoji/svg?seed=Aneka&backgroundColor=b6e3f4" alt="Group 2" class="w-24 h-24 rounded-full shadow-lg border-4 border-primary bg-white">
+                
+                <button id="btn-p2-win" class="big-button w-full max-w-xs bg-primary hover:bg-blue-600 text-white font-bold py-4 px-4 rounded-2xl text-xl shadow-[0_8px_0_rgb(29,78,216)] active:shadow-[0_0px_0_rgb(29,78,216)] border border-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-check-circle mr-2"></i><span id="p2-btn-text">DONE!</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="w-full bg-white dark:bg-darkCard shadow-inner p-4 text-center mt-auto border-t border-slate-200 dark:border-darkBorder">
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Design By David Beleño - Math Education - 5° Grade
+            </p>
+        </footer>
+    </div>
+
+    <div id="settings-modal" class="modal fixed inset-0 bg-black bg-opacity-60 z-50 items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-darkCard rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="text-2xl font-bold text-slate-800 dark:text-white">Settings</h3>
+                <button id="btn-close-modal" class="text-slate-500 hover:text-slate-800 dark:hover:text-white text-3xl font-bold leading-none">&times;</button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Challenge Mode -->
+                <div class="flex items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <input type="checkbox" id="setting-challenge" class="w-5 h-5 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label id="lbl-challenge" for="setting-challenge" class="ml-3 text-sm font-bold text-purple-700 dark:text-purple-300">Challenge Mode (5 Rounds, Auto-Difficulty)</label>
+                </div>
+
+                <!-- Operation Type -->
+                <div>
+                    <label id="lbl-operation" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Operation</label>
+                    <select id="setting-operation" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                        <option value="add" id="opt-add">Addition (+)</option>
+                        <option value="subtract" id="opt-sub">Subtraction (-)</option>
+                        <option value="multiply" id="opt-mult">Multiplication (x)</option>
+                        <option value="divide" id="opt-div">Exact Division (÷)</option>
+                    </select>
+                </div>
+
+                <!-- Digits -->
+                <div>
+                    <label id="lbl-digits" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Difficulty (Digits)</label>
+                    <select id="setting-digits" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                        <option value="1x1">1 Digit x 1 Digit</option>
+                        <option value="2x1">2 Digits x 1 Digit</option>
+                        <option value="2x2">2 Digits x 2 Digits</option>
+                        <option value="3x1">3 Digits x 1 Digit</option>
+                        <option value="3x2">3 Digits x 2 Digits</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Timer Duration -->
+                    <div>
+                        <label id="lbl-timer" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Time (min)</label>
+                        <select id="setting-timer" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                            <option value="1">1 Minute</option>
+                            <option value="2">2 Minutes</option>
+                            <option value="3">3 Minutes</option>
+                            <option value="4">4 Minutes</option>
+                            <option value="5">5 Minutes</option>
+                        </select>
+                    </div>
+
+                    <!-- Total Rounds -->
+                    <div>
+                        <label id="lbl-rounds" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Rounds</label>
+                        <input type="number" id="setting-rounds" min="1" max="20" value="5" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                    </div>
+                </div>
+
+                <!-- Target Score -->
+                <div>
+                    <label id="lbl-target" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Target Score to Win</label>
+                    <input type="number" id="setting-target" min="1" max="100" value="5" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary outline-none">
+                </div>
+
+                <!-- Pyramid Size (Máximo 7) -->
+                <div class="pt-2">
+                    <label id="lbl-size" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Staircase Levels: <span id="size-val" class="font-bold text-primary">4</span></label>
+                    <input type="range" id="setting-size" min="3" max="7" value="4" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-primary">
+                </div>
+                
+                <button id="btn-save-settings" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg mt-6 transition shadow-md">
+                    Apply & Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let state = {
+            lang: 'en', // Cambiado a 'en' por defecto
+            isDark: false,
+            score: { p1: 0, p2: 0 },
+            currentRound: 1,
+            timer: { interval: null, remaining: 60, isRunning: false },
+            settings: {
+                challengeMode: false,
+                operation: 'multiply',
+                digits: '2x1',
+                timerMins: 1,
+                totalRounds: 5,
+                targetScore: 5,
+                levels: 4
+            }
+        };
+
+        // DOM Elements
+        const DOM = {
+            startScreen: document.getElementById('start-screen'),
+            btnInitApp: document.getElementById('btn-init-app'),
+            mainApp: document.getElementById('main-app'),
+            
+            pyramidContainer: document.getElementById('pyramid-container'),
+            stopwatch: document.getElementById('stopwatch'),
+            btnStart: document.getElementById('btn-start'),
+            btnNext: document.getElementById('btn-next'),
+            scoreP1: document.getElementById('score-p1'),
+            scoreP2: document.getElementById('score-p2'),
+            btnP1Win: document.getElementById('btn-p1-win'),
+            btnP2Win: document.getElementById('btn-p2-win'),
+            roundDisplay: document.getElementById('round-display'),
+            
+            // Settings Elements
+            modal: document.getElementById('settings-modal'),
+            btnSettings: document.getElementById('btn-settings'),
+            btnCloseModal: document.getElementById('btn-close-modal'),
+            btnSaveSettings: document.getElementById('btn-save-settings'),
+            selOperation: document.getElementById('setting-operation'),
+            selDigits: document.getElementById('setting-digits'),
+            selTimer: document.getElementById('setting-timer'),
+            inpRounds: document.getElementById('setting-rounds'),
+            inpTarget: document.getElementById('setting-target'),
+            rngSize: document.getElementById('setting-size'),
+            lblSizeVal: document.getElementById('size-val'),
+            chkChallenge: document.getElementById('setting-challenge'),
+            
+            // Toggles
+            btnTheme: document.getElementById('btn-theme'),
+            btnLang: document.getElementById('btn-lang'),
+        };
+
+        const translations = {
+            en: {
+                appTitle: "Math Summit Challenge",
+                p1Title: "Group 1",
+                p2Title: "Group 2",
+                points: "Points",
+                done: "DONE!",
+                startTimer: "Start Timer",
+                nextRound: "Next Round",
+                settingsTitle: "Settings",
+                opLabel: "Operation",
+                optAdd: "Addition (+)",
+                optSub: "Subtraction (-)",
+                optMult: "Multiplication (x)",
+                optDiv: "Exact Division (÷)",
+                digLabel: "Difficulty (Digits)",
+                timerLabel: "Time (min)",
+                roundsLabel: "Total Rounds",
+                targetLabel: "Target Score to Win",
+                sizeLabel: "Staircase Levels:",
+                applyBtn: "Apply & Reset",
+                roundTxt: "Round",
+                ofTxt: "of",
+                challengeLbl: "Challenge Mode (5 Rounds, Auto-Difficulty)"
+            },
+            es: {
+                appTitle: "Reto en la Cima Matemática",
+                p1Title: "Grupo 1",
+                p2Title: "Grupo 2",
+                points: "Puntos",
+                done: "¡LISTO!",
+                startTimer: "Iniciar Tiempo",
+                nextRound: "Siguiente Ronda",
+                settingsTitle: "Configuración",
+                opLabel: "Operación",
+                optAdd: "Suma (+)",
+                optSub: "Resta (-)",
+                optMult: "Multiplicación (x)",
+                optDiv: "División Exacta (÷)",
+                digLabel: "Dificultad (Dígitos)",
+                timerLabel: "Tiempo (min)",
+                roundsLabel: "Rondas Totales",
+                targetLabel: "Cifra meta para ganar",
+                sizeLabel: "Niveles de Escalera:",
+                applyBtn: "Aplicar y Reiniciar",
+                roundTxt: "Ronda",
+                ofTxt: "de",
+                challengeLbl: "Modo Challenge (5 Rondas, Dificultad Progresiva)"
+            }
+        };
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRangeForDigits(digitType) {
+            switch(digitType) {
+                case '1': return {min: 1, max: 9};
+                case '2': return {min: 10, max: 99};
+                case '3': return {min: 100, max: 999};
+                default: return {min: 1, max: 9};
+            }
+        }
+
+        function generateProblem() {
+            let num1, num2;
+            let op = state.settings.operation;
+            let diff = state.settings.digits;
+
+            // Challenge Mode Overrides
+            if (state.settings.challengeMode) {
+                op = 'multiply'; 
+                if (state.currentRound === 1) diff = '1x1';
+                else if (state.currentRound === 2) diff = '2x1';
+                else if (state.currentRound === 3) diff = '2x2';
+                else if (state.currentRound === 4) diff = '3x1';
+                else diff = '3x2';
+            }
+
+            const parts = diff.split('x');
+            const d1 = parts[0] || '1';
+            const d2 = parts[1] || '1';
+            
+            const range1 = getRangeForDigits(d1);
+            const range2 = getRangeForDigits(d2);
+
+            num1 = getRandomInt(range1.min, range1.max);
+            num2 = getRandomInt(range2.min, range2.max);
+
+            if (op === 'add') {
+                return `${num1} + ${num2}`;
+            } else if (op === 'subtract') {
+                // Ensure positive result
+                if (num1 < num2) {
+                    const temp = num1;
+                    num1 = num2;
+                    num2 = temp;
+                }
+                return `${num1} - ${num2}`;
+            } else if (op === 'multiply') {
+                return `${num1} × ${num2}`;
+            } else if (op === 'divide') {
+                // Ensure exact division
+                const divisor = getRandomInt(range2.min, range2.max);
+                const quotient = getRandomInt(range1.min, range1.max);
+                const dividend = divisor * quotient;
+                return `${dividend} ÷ ${divisor}`;
+            }
+        }
+
+        function buildPyramid() {
+            DOM.pyramidContainer.innerHTML = '';
+            const levels = parseInt(state.settings.levels);
+            
+            for (let i = 1; i <= levels; i++) {
+                const row = document.createElement('div');
+                row.className = 'pyramid-row';
+                
+                for (let j = 0; j < i; j++) {
+                    const box = document.createElement('div');
+                    box.className = 'math-box';
+                    
+                    // Only show on edges (first or last item of the row)
+                    if (j === 0 || j === (i - 1)) {
+                        box.textContent = generateProblem();
+                    } else {
+                        box.classList.add('invisible-box'); // Hide middle elements
+                        box.textContent = "0"; // Placeholder text
+                    }
+                    
+                    row.appendChild(box);
+                }
+                DOM.pyramidContainer.appendChild(row);
+            }
+
+            // Update Round Display
+            const t = translations[state.lang];
+            const maxRounds = state.settings.challengeMode ? 5 : state.settings.totalRounds;
+            DOM.roundDisplay.textContent = `${t.roundTxt} ${state.currentRound} ${t.ofTxt} ${maxRounds}`;
+        }
+
+        function formatTimer(totalSeconds) {
+            const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const s = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function startTimer() {
+            if (state.timer.isRunning) return;
+            
+            DOM.btnStart.classList.add('hidden');
+            DOM.btnNext.classList.add('hidden');
+            enableWinButtons();
+            
+            state.timer.isRunning = true;
+            state.timer.interval = setInterval(() => {
+                state.timer.remaining--;
+                DOM.stopwatch.textContent = formatTimer(state.timer.remaining);
+                
+                if (state.timer.remaining <= 0) {
+                    stopTimer();
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(state.timer.interval);
+            state.timer.isRunning = false;
+            DOM.btnNext.classList.remove('hidden');
+            disableWinButtons();
+        }
+
+        function resetTimer() {
+            stopTimer();
+            state.timer.remaining = state.settings.timerMins * 60;
+            DOM.stopwatch.textContent = formatTimer(state.timer.remaining);
+            DOM.btnStart.classList.remove('hidden');
+            DOM.btnNext.classList.add('hidden');
+            disableWinButtons();
+        }
+
+        function handleTimeOut() {
+            DOM.stopwatch.classList.add('text-red-500', 'animate-pulse');
+            setTimeout(() => {
+                DOM.stopwatch.classList.remove('text-red-500', 'animate-pulse');
+            }, 3000);
+        }
+
+        function triggerScoreAnimation(element) {
+            element.classList.remove('animate-score-pop');
+            void element.offsetWidth; // trigger reflow
+            element.classList.add('animate-score-pop');
+        }
+
+        function handleWin(player) {
+            if (!state.timer.isRunning) return;
+            
+            stopTimer();
+            state.score[player]++;
+            updateScores();
+            
+            const scoreEl = player === 'p1' ? DOM.scoreP1 : DOM.scoreP2;
+            triggerScoreAnimation(scoreEl);
+
+            if (state.score[player] >= state.settings.targetScore) {
+                setTimeout(() => alert(`${translations[state.lang][player + 'Title']} Wins the Game!`), 500);
+            }
+        }
+
+        function updateScores() {
+            DOM.scoreP1.textContent = state.score.p1;
+            DOM.scoreP2.textContent = state.score.p2;
+        }
+
+        function nextRound() {
+            const maxRounds = state.settings.challengeMode ? 5 : state.settings.totalRounds;
+            if (state.currentRound < maxRounds) {
+                state.currentRound++;
+                buildPyramid();
+                resetTimer();
+            } else {
+                alert("Game Over! Final scores:\n" + 
+                      translations[state.lang].p1Title + ": " + state.score.p1 + "\n" +
+                      translations[state.lang].p2Title + ": " + state.score.p2);
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            state.score = { p1: 0, p2: 0 };
+            state.currentRound = 1;
+            updateScores();
+            buildPyramid();
+            resetTimer();
+        }
+
+        function enableWinButtons() {
+            DOM.btnP1Win.disabled = false;
+            DOM.btnP2Win.disabled = false;
+            DOM.btnP1Win.classList.remove('opacity-50', 'cursor-not-allowed');
+            DOM.btnP2Win.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function disableWinButtons() {
+            DOM.btnP1Win.disabled = true;
+            DOM.btnP2Win.disabled = true;
+            DOM.btnP1Win.classList.add('opacity-50', 'cursor-not-allowed');
+            DOM.btnP2Win.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        function toggleTheme() {
+            state.isDark = !state.isDark;
+            if (state.isDark) {
+                document.documentElement.classList.add('dark');
+                DOM.btnTheme.innerHTML = '<i class="fas fa-sun text-xl text-yellow-400"></i>';
+            } else {
+                document.documentElement.classList.remove('dark');
+                DOM.btnTheme.innerHTML = '<i class="fas fa-moon text-xl"></i>';
+            }
+        }
+
+        function toggleLanguage() {
+            state.lang = state.lang === 'en' ? 'es' : 'en';
+            // Show the opposite language in the button
+            DOM.btnLang.innerHTML = `<span class="font-bold text-sm md:text-lg">${state.lang === 'en' ? 'ES' : 'EN'}</span>`;
+            updateUI();
+        }
+
+        function updateUI() {
+            const t = translations[state.lang];
+            document.getElementById('app-title').innerHTML = `<i class="fas fa-mountain text-primary mr-2"></i>${t.appTitle}`;
+            document.getElementById('p1-title').textContent = t.p1Title;
+            document.getElementById('p2-title').textContent = t.p2Title;
+            document.getElementById('p1-points-label').textContent = t.points;
+            document.getElementById('p2-points-label').textContent = t.points;
+            document.getElementById('p1-btn-text').innerHTML = `<i class="fas fa-check-circle mr-2"></i>${t.done}`;
+            document.getElementById('p2-btn-text').innerHTML = `<i class="fas fa-check-circle mr-2"></i>${t.done}`;
+            document.getElementById('start-btn-text').textContent = t.startTimer;
+            document.getElementById('next-btn-text').textContent = t.nextRound;
+            
+            document.getElementById('modal-title').textContent = t.settingsTitle;
+            document.getElementById('lbl-operation').textContent = t.opLabel;
+            document.getElementById('opt-add').textContent = t.optAdd;
+            document.getElementById('opt-sub').textContent = t.optSub;
+            document.getElementById('opt-mult').textContent = t.optMult;
+            document.getElementById('opt-div').textContent = t.optDiv;
+            document.getElementById('lbl-digits').textContent = t.digLabel;
+            document.getElementById('lbl-timer').textContent = t.timerLabel;
+            document.getElementById('lbl-rounds').textContent = t.roundsLabel;
+            document.getElementById('lbl-target').textContent = t.targetLabel;
+            document.getElementById('lbl-challenge').textContent = t.challengeLbl;
+            
+            document.getElementById('lbl-size').innerHTML = `${t.sizeLabel} <span id="size-val" class="font-bold text-primary">${DOM.rngSize.value}</span>`;
+            DOM.lblSizeVal = document.getElementById('size-val');
+            
+            DOM.btnSaveSettings.textContent = t.applyBtn;
+            
+            const maxRounds = state.settings.challengeMode ? 5 : state.settings.totalRounds;
+            DOM.roundDisplay.textContent = `${t.roundTxt} ${state.currentRound} ${t.ofTxt} ${maxRounds}`;
+        }
+
+        function openSettings() {
+            DOM.selOperation.value = state.settings.operation;
+            DOM.selDigits.value = state.settings.digits;
+            DOM.selTimer.value = state.settings.timerMins;
+            DOM.inpRounds.value = state.settings.totalRounds;
+            DOM.inpTarget.value = state.settings.targetScore;
+            DOM.rngSize.value = state.settings.levels;
+            DOM.chkChallenge.checked = state.settings.challengeMode;
+            
+            DOM.lblSizeVal.textContent = state.settings.levels;
+            DOM.modal.classList.add('active');
+            handleChallengeToggle();
+        }
+
+        function closeSettings() {
+            DOM.modal.classList.remove('active');
+        }
+
+        function handleChallengeToggle() {
+            const isChallenge = DOM.chkChallenge.checked;
+            DOM.selDigits.disabled = isChallenge;
+            DOM.inpRounds.disabled = isChallenge;
+            if (isChallenge) {
+                DOM.inpRounds.value = 5;
+            }
+        }
+
+        function applySettings() {
+            state.settings.challengeMode = DOM.chkChallenge.checked;
+            state.settings.operation = DOM.selOperation.value;
+            state.settings.digits = DOM.selDigits.value;
+            state.settings.timerMins = parseInt(DOM.selTimer.value) || 1;
+            state.settings.totalRounds = parseInt(DOM.inpRounds.value) || 5;
+            state.settings.targetScore = parseInt(DOM.inpTarget.value) || 5;
+            state.settings.levels = DOM.rngSize.value;
+            
+            closeSettings();
+            resetGame();
+        }
+
+        DOM.btnInitApp.addEventListener('click', () => {
+            DOM.startScreen.classList.add('hidden-start');
+            setTimeout(() => {
+                DOM.startScreen.style.display = 'none';
+                DOM.mainApp.classList.remove('hidden');
+            }, 500);
+        });
+
+        DOM.btnStart.addEventListener('click', startTimer);
+        DOM.btnNext.addEventListener('click', nextRound);
+        DOM.btnP1Win.addEventListener('click', () => handleWin('p1'));
+        DOM.btnP2Win.addEventListener('click', () => handleWin('p2'));
+        
+        DOM.btnTheme.addEventListener('click', toggleTheme);
+        DOM.btnLang.addEventListener('click', toggleLanguage);
+        
+        DOM.btnSettings.addEventListener('click', openSettings);
+        DOM.btnCloseModal.addEventListener('click', closeSettings);
+        DOM.btnSaveSettings.addEventListener('click', applySettings);
+        DOM.chkChallenge.addEventListener('change', handleChallengeToggle);
+        
+        DOM.rngSize.addEventListener('input', (e) => {
+            DOM.lblSizeVal.textContent = e.target.value;
+        });
+
+        DOM.modal.addEventListener('click', (e) => {
+            if (e.target === DOM.modal) closeSettings();
+        });
+
+        function init() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                toggleTheme();
+            }
+            disableWinButtons(); 
+            // Inicia configurando el botón para alternar a Español (ES) ya que empieza en 'en'
+            DOM.btnLang.innerHTML = `<span class="font-bold text-sm md:text-lg">ES</span>`;
+            updateUI();
+            resetGame();
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
